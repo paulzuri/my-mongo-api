@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tweet api manager</title>
+    <style>
+        body { font-family: 'segoe ui', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1100px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #1d9bf0; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 5px; transition: background 0.2s; }
+        button:hover { filter: brightness(90%); }
+        .btn-post { background: #42b72a; color: white; }
+        .btn-search { background: #1d9bf0; color: white; }
+        .btn-put { background: #f57c00; color: white; }
+        .btn-delete { background: #d32f2f; color: white; }
+        #output { grid-column: span 2; background: #282c34; color: #61dafb; padding: 15px; border-radius: 10px; font-family: monospace; white-space: pre-wrap; margin-top: 20px; min-height: 100px; border: 1px solid #444; }
+        .small-text { font-size: 0.8rem; color: #666; margin-bottom: 5px; display: block; }
+        .section-split { display: flex; gap: 20px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+
+<div class="grid">
+    <div class="card">
+        <h2>crear tweet (post /)</h2>
+        <textarea id="pText" placeholder="texto del tweet"></textarea>
+        <input type="text" id="pZonal" placeholder="administracionZonal">
+        <input type="text" id="pOrigen" placeholder="origenDatos">
+        <input type="text" id="pQuery" placeholder="tipoQuery">
+        <input type="text" id="pZona" placeholder="tipoZona">
+        <button class="btn-post" onclick="doPost()">guardar tweet</button>
+    </div>
+
+    <div class="card">
+        <h2>buscar uno (get /search)</h2>
+        <p class="small-text">busca por id o por filtros:</p>
+        <input type="text" id="sId" placeholder="id exacto (opcional)">
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+        <input type="text" id="sZonal" placeholder="administracionZonal">
+        <input type="text" id="sOrigen" placeholder="origenDatos">
+        <input type="text" id="sQuery" placeholder="tipoQuery">
+        <input type="text" id="sZona" placeholder="tipoZona">
+        <button class="btn-search" onclick="doSearch()">ejecutar búsqueda</button>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+        <h2>gestionar por id (put / delete)</h2>
+        <input type="text" id="mId" placeholder="id del tweet a modificar/borrar">
+        
+        <div class="section-split">
+            <div style="flex: 2;">
+                <p class="small-text">actualizar campos (deja vacío lo que no quieras cambiar):</p>
+                <textarea id="uText" placeholder="nuevo texto"></textarea>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="text" id="uZonal" placeholder="nueva administración zonal">
+                    <input type="text" id="uOrigen" placeholder="nuevo origen de datos">
+                    <input type="text" id="uQuery" placeholder="nuevo tipo query">
+                    <input type="text" id="uZona" placeholder="nuevo tipo zona">
+                </div>
+                <label class="small-text">cambiar fecha:</label>
+                <input type="date" id="uDate">
+                <button class="btn-put" onclick="doUpdate()">actualizar tweet</button>
+            </div>
+            
+            <div style="flex: 1; border-left: 1px solid #eee; padding-left: 20px; display: flex; flex-direction: column; justify-content: center;">
+                <p class="small-text">eliminar registro:</p>
+                <button class="btn-delete" onclick="doDelete()">eliminar tweet</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="output">// resultados de la api...</div>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    function formatTwitterDate(dateObj) {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${days[dateObj.getUTCDay()]} ${months[dateObj.getUTCMonth()]} ${String(dateObj.getUTCDate()).padStart(2, '0')} 12:00:00 +0000 ${dateObj.getUTCFullYear()}`;
+    }
+
+    async function handleResponse(res) {
+        const data = await res.json();
+        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function doPost() {
+        const body = {
+            text: document.getElementById('pText').value,
+            administracionZonal: document.getElementById('pZonal').value,
+            origenDatos: document.getElementById('pOrigen').value,
+            tipoQuery: document.getElementById('pQuery').value,
+            tipoZona: document.getElementById('pZona').value
+        };
+        const res = await fetch(`${API_URL}/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        handleResponse(res);
+    }
+
+    async function doSearch() {
+        const q = new URLSearchParams();
+        const searchId = document.getElementById('sId').value;
+        
+        if(searchId) {
+            q.append('id', searchId);
+        } else {
+            const fields = {'administracionZonal':'sZonal', 'origenDatos':'sOrigen', 'tipoQuery':'sQuery', 'tipoZona':'sZona'};
+            for (const [key, elementId] of Object.entries(fields)) {
+                const val = document.getElementById(elementId).value;
+                if(val) q.append(key, val);
+            }
+        }
+        
+        const res = await fetch(`${API_URL}/search?${q.toString()}`);
+        handleResponse(res);
+    }
+
+    async function doUpdate() {
+        const id = document.getElementById('mId').value;
+        if(!id) return alert("id requerido");
+        
+        const body = {};
+        const fields = {'text':'uText','administracionZonal':'uZonal','origenDatos':'uOrigen','tipoQuery':'uQuery','tipoZona':'uZona'};
+        for (const [key, elementId] of Object.entries(fields)) {
+            const val = document.getElementById(elementId).value;
+            if(val) body[key] = val;
+        }
+
+        const dateVal = document.getElementById('uDate').value;
+        if(dateVal) body.createdAt = formatTwitterDate(new Date(dateVal));
+
+        const res = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        handleResponse(res);
+    }
+
+    async function doDelete() {
+        const id = document.getElementById('mId').value;
+        if(!id || !confirm("¿eliminar permanentemente?")) return;
+        const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        handleResponse(res);
+    }
+</script>
+
+</body>
+</html>
