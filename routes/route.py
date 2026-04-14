@@ -11,11 +11,6 @@ DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
 
 # crud methods
 
-@router.get("/")
-async def get_tweets():
-    tweets = list_serial(collection_name.find())
-    return tweets
-
 @router.get("/search")
 async def get_tweets_by_fields(
     id: str = Query(None),
@@ -24,14 +19,14 @@ async def get_tweets_by_fields(
     tipoQuery: str = Query(None),
     tipoZona: str = Query(None)
 ):
-    # if searching by id, we still likely only want one
+
     if id:
         if not ObjectId.is_valid(id):
-            raise HTTPException(status_code=400, detail="id inválido")
+            raise HTTPException(status_code=400, detail="" \
+            "")
         tweet = collection_name.find_one({"_id": ObjectId(id)})
         return [individual_serial(tweet)] if tweet else []
 
-    # build the filter for multiple results
     query_filter = {}
     if administracionZonal: query_filter["administracionZonal"] = administracionZonal
     if origenDatos: query_filter["origenDatos"] = origenDatos
