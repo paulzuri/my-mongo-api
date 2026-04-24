@@ -148,7 +148,7 @@ async def trigger_apify_scraper(req: ScraperRequest):
 
 @router.post("/webhooks/apify")
 async def handle_apify_webhooks(data: ApifyWebhook):
-    if data.eventType == "ACTOR.RUN.SUCCEEDED":
+    if data.eventType == "ACTOR.RUN.SUCCEEDED" and data.eventData:
         run_id = data.eventData.get("actorRunId")
         print(f"run {run_id} finished successfully!")
         

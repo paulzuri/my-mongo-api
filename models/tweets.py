@@ -19,8 +19,9 @@ class UpdateTweetModel(BaseModel):
     createdAt: Optional[str] = None
 
 class ApifyWebhook(BaseModel):
-    userId: str
-    createdAt: str
-    eventType: str
-    eventData: Dict[str, Any]
-    resourse: Dict[str, Any]
+    userId: Optional[str] = None
+    createdAt: Optional[str] = None
+    eventType: Optional[str] = None
+    eventData: Optional[Dict[str, Any]] = None
+    resource: Optional[Dict[str, Any]] = None
+    globals: Optional[Dict[str, Any]] = None
