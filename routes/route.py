@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
 from pydantic import BaseModel
+from pymongo.errors import PyMongoError
 
 router = APIRouter()
 
@@ -152,12 +153,22 @@ async def handle_apify_webhook(data: ApifyWebhook):
         dataset_id = data.resource.get("defaultDatasetId")
         
         if dataset_id:
-            client = ApifyClient(os.getenv("APIFY_TOKEN"))
-            dataset_items = client.dataset(dataset_id).list_items().items
-            
-            if dataset_items:
-                # use the new collection reference here
-                result = test_collection.insert_many(dataset_items)
-                print(f"inserted {len(result.inserted_ids)} items")
+            try:
+                client = ApifyClient(os.getenv("APIFY_TOKEN"))
+                dataset_items = client.dataset(dataset_id).list_items().items
                 
-    return {"status": "success"}
+                if dataset_items:
+                    # try to insert the data
+                    result = test_collection.insert_many(dataset_items)
+                    print(f"success: inserted {len(result.inserted_ids)} items into mongo")
+                else:
+                    print("warning: apify dataset was empty, nothing to upload")
+                    
+            except PyMongoError as e:
+                # this catches database-specific errors (connection, permissions, etc.)
+                print(f"ERROR mongodb: {e}")
+            except Exception as e:
+                # this catches everything else (apify client errors, network issues)
+                print(f"ERROR unexpected: {e}")
+                
+    return {"status": "webhook processed"}

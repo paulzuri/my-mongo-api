@@ -10,4 +10,4 @@ db = client.db_tweets
 
 collection_name = db["clean_tweets"]
 
-test_collection = db["apify-integration-test"]
+test_collection = db["test_collection"]
