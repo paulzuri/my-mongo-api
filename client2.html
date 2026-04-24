@@ -4,70 +4,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>f5ve api for gay bitches</title>
-    <style>
-        #stupid-div {
-            display: flex;
-            justify-content: center;
-            align-items: baseline;
-            gap: 10px;
-        }
-
-        #subtext {
-            text-align: center;
-            font-weight: lighter;
-            margin: 0px 0px 40px 0px;
-        }
-    </style>
+    <title>twitter search query builder</title>
 </head>
 
 <body>
-    <div id="stupid-div">
-        <h3 class="inline-header">me tryna impress </h3>
-        <h1 class="inline-header">f5ve</h1>
-        <h3 class="inline-header"> trade like 🤭</h3>
-    </div>
+    <h3>cliente de prueba para generación de queries</h3>
+    <form id="query-form">
+        <label for="search-terms">términos de búsqueda (e.g., robo OR crimen):</label><br>
+        <textarea id="search-terms" rows="4"
+            cols="70">(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR “lugar seguro” OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia)</textarea><br><br>
 
-    <h4 id="subtext">i wanna be with u every day and every night 🥺</h4>
+        <label for="zona">administracion zonal:</label><br>
+        <select id="zona" onchange="updateLocationTypes()"></select><br><br>
 
-    <form action="" id="my-form">
-        <label>Ingresa los términos de busqueda (e. g. crimen):</label>
-        <input type="number" id="dicks-capacity">
+        <label for="location-type">tipo de zona:</label><br>
+        <select id="location-type"></select><br><br>
 
-        <label for="options">choose an option:</label>
-        <select id="options" name="options">
-            <option value="1">option 1</option>
-            <option value="2">option 2</option>
-            <option value="3">option 3</option>
-        </select>
-        <button type="button" onclick="displayJoke()">SUBMISSION</button>
+        <label for="source">tipo de fuente:</label><br>
+        <select id="source">
+            <option value="-filter:links">personas (sin links)</option>
+            <option value="filter:links">medios (con links)</option>
+        </select><br><br>
+
+        <label for="date-since">desde (opcional):</label><br>
+        <input type="date" id="date-since"><br><br>
+
+        <label for="date-until">hasta (opcional):</label><br>
+        <input type="date" id="date-until"><br><br>
+
+        <button type="button" onclick="generateQuery()">generar query</button>
     </form>
 
+    <h4>query resultante:</h4>
+    <p id="result-query" style="word-wrap: break-word; background: #eee; padding: 10px;"></p>
 
-
-    <p name="" id="surprise-msg"></p>
-
+    <button type="button" onclick="runScraper()">ejecutar scraper</button>
 
     <script>
-        // fetch('https://jsonplaceholder.typicode.com/todos')
-        //     .then(response => response.json())
-        //     .then(json => console.log(json))
+        const zoneData = {
+            "calderon": {
+                "parroquias rurales": '("parroquia de calderon" OR "llano chico")',
+                "geolocalizacion": 'geocode:-0.084717,-78.426257,6.87km'
+            },
+            "eloy alfaro": {
+                "parroquias urbanas": '(chilibulo OR solanda OR "la magdalena" OR "san bartolo" OR "la ferroviaria" OR chimbacalle OR "la mena" OR "la argelia")',
+                "parroquias rurales": '(lloa)',
+                "geolocalizacion": 'geocode:-0.188790,-78.672753,21.09km'
+            },
+            "eugenio espejo": {
+                "parroquias urbanas": '("belisario quevedo" OR "iñaquito" OR rumipamba OR jipijapa OR cochapamba OR "parroquia de concepcion" OR "parroquia kennedy" OR "san isidro del inca" OR "la mariscal")',
+                "parroquias rurales": '(zambiza OR nayon OR guayllabamba OR perucho OR chavezpamba OR puellaro OR "parroquia atahualpa" OR "san jose de minas")',
+                "geolocalizacion": 'geocode:-0.148905,-78.478724,10.02km'
+            },
+            "la delicia": {
+                "parroquias urbanas": '(carcelen OR "urbanizacion el condado" OR cotocollao OR ponceano OR "comite del pueblo")',
+                "parroquias rurales": '(calacali OR gualea OR nanega OR nanegalito OR "parroquia nono" OR "parroquia pacto" OR pomasqui OR "parroquia san antonio")',
+                "geolocalizacion": 'geocode:0.154952,-78.623598,36.32km'
+            },
+            "los chillos": {
+                "parroquias rurales": '(amaguaña OR conocoto OR guangopolo OR alangasi OR "parroquia la merced" OR pintag)',
+                "geolocalizacion": 'geocode:-0.410948,-78.386421,21.48km'
+            },
+            "manuela saenz": {
+                "parroquias urbanas": '("centro histórico de quito" OR "parroquia la libertad" or "parroquia san juan" OR itchimbia OR puengasi)',
+                "geolocalizacion": 'geocode:-0.195928,-78.511113,7.20km'
+            },
+            "quitumbe": {
+                "parroquias urbanas": '(chillogallo OR "parroquia la ecuatoriana" OR quitumbe OR turubamba)',
+                "geolocalizacion": 'geocode:-0.307216,-78.556681,6.75km'
+            },
+            "tumbaco": {
+                "parroquias rurales": '("parroquia checa" OR cumbaya OR "el quinche" OR pifo OR puembo OR yaruqui OR tababela OR tumbaco)',
+                "geolocalizacion": 'geocode:-0.205104,-78.305979,20.88km'
+            }
+        };
 
-        const surprise_msg = document.getElementById("surprise-msg")
-        const capacity = document.getElementById("dicks-capacity")
+        const zonaSelect = document.getElementById('zona');
+        const locationTypeSelect = document.getElementById('location-type');
 
-        function displayData() {
-
-            surprise_msg.innerText = "omg you can eat " + capacity.value + " dicks, lol what a slut"
+        function init() {
+            for (const zone in zoneData) {
+                const option = document.createElement('option');
+                option.value = zone;
+                option.textContent = zone;
+                zonaSelect.appendChild(option);
+            }
+            updateLocationTypes();
         }
 
-        async function displayJoke() {
-            const response = await fetch('https://jsonplaceholder.typicode.com/todos')
-            const json = await response.json()
+        function updateLocationTypes() {
+            locationTypeSelect.innerHTML = '';
+            const selectedZone = zonaSelect.value;
+            const availableTypes = zoneData[selectedZone];
 
-            surprise_msg.innerText = json[1].title
-            console.log("im the jokester!")
+            for (const type in availableTypes) {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                locationTypeSelect.appendChild(option);
+            }
         }
+
+        function generateQuery() {
+            const terms = document.getElementById('search-terms').value.trim();
+            const zone = zonaSelect.value;
+            const locType = locationTypeSelect.value;
+            const locationString = zoneData[zone][locType];
+
+            const generalLocation = locType === "geolocalizacion" ? "" : "(quito OR pichincha OR ecuador OR uio)";
+            const sourceFilter = document.getElementById('source').value;
+            const defaultFilters = "-futbol -gol -filter:retweets";
+
+            let dateFilter = "";
+            const sinceDate = document.getElementById('date-since').value;
+            const untilDate = document.getElementById('date-until').value;
+
+            // convert date strings to unix timestamps (seconds)
+            if (sinceDate) {
+                const sinceUnix = Math.floor(new Date(sinceDate).getTime() / 1000);
+                dateFilter += ` since_time:${sinceUnix}`;
+            }
+            if (untilDate) {
+                const untilUnix = Math.floor(new Date(untilDate).getTime() / 1000);
+                dateFilter += ` until_time:${untilUnix}`;
+            }
+
+            const finalQuery = `${terms} ${locationString} ${generalLocation} ${defaultFilters} ${sourceFilter}${dateFilter}`;
+
+            document.getElementById('result-query').innerText = finalQuery.replace(/\s+/g, ' ').trim();
+        }
+
+        async function runScraper() {
+            const finalQuery = document.getElementById('result-query').innerText;
+
+            if (!finalQuery) {
+                alert("primero debes generar la query");
+                return;
+            }
+
+            const zone = document.getElementById('zona').value;
+            const locType = document.getElementById('location-type').value;
+
+            const payload = {
+                query: finalQuery,
+                administracionZonal: zone,
+                tipoZona: locType
+            };
+
+            try {
+                const response = await fetch('http://localhost:10000/trigger-scraper', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log(result);
+                alert(result.msg + " - id: " + result.run_id);
+            } catch (error) {
+                console.error("error:", error);
+                alert("hubo un error al iniciar el scraper");
+            }
+        }
+
+        window.onload = init;
     </script>
 </body>
 

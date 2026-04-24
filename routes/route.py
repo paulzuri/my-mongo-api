@@ -1,13 +1,21 @@
 from fastapi import Query, APIRouter, HTTPException, status
-from models.tweets import Tweet, UpdateTweetModel
+from models.tweets import Tweet, UpdateTweetModel, ApifyWebhook
 from config.database import collection_name
 from schema.schemas import list_serial, individual_serial
 from bson import ObjectId
 from datetime import datetime
+import os
+from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
+from pydantic import BaseModel
 
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
+
+class ScraperRequest(BaseModel):
+    query: str
+    administracionZonal: str
+    tipoZona: str
 
 # crud methods
 
@@ -106,3 +114,42 @@ async def delete_tweet(id: str):
         )
 
     return {"msg": f"tweet con id {id} ha sido eliminado correctamente"}
+
+@router.post("/trigger-scraper")
+async def trigger_apify_scraper(req: ScraperRequest):
+    apify_token = os.getenv("APIFY_TOKEN")
+    if not apify_token:
+        return {"error": "apify token missing"}
+
+    client = ApifyClient(apify_token)
+
+    mapping_function = f"""(object) => {{
+        return {{
+            text: object.full_text || object.text,
+            administracionZonal: '{req.administracionZonal}',
+            origenDatos: 'apify scraper',
+            tipoQuery: 'twitter search',
+            tipoZona: '{req.tipoZona}',
+            createdAt: object.created_at
+        }}
+    }}"""
+
+    run_input = {
+        "searchTerms": [req.query],
+        "maxItems": 3, 
+        "sort": "Latest",
+        "tweetLanguage": "es",
+        "customMapFunction": mapping_function
+    }
+
+    run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
+    
+    return {"msg": "scraper started", "run_id": run["id"]}
+
+@router.post("/webhooks/apify")
+async def handle_apify_webhooks(data: ApifyWebhook):
+    if data.eventType == "ACTOR.RUN.SUCCEEDED":
+        run_id = data.eventData.get("actorRunId")
+        print(f"run {run_id} finished successfully!")
+        
+    return {"status": "received"}

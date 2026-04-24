@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any, Dict
 
 class Tweet(BaseModel):
     text: str
@@ -17,3 +17,10 @@ class UpdateTweetModel(BaseModel):
     tipoQuery: Optional[str] = None
     tipoZona: Optional[str] = None
     createdAt: Optional[str] = None
+
+class ApifyWebhook(BaseModel):
+    userId: str
+    createdAt: str
+    eventType: str
+    eventData: Dict[str, Any]
+    resourse: Dict[str, Any]
