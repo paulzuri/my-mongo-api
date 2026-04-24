@@ -1,6 +1,6 @@
 from fastapi import Query, APIRouter, HTTPException, status
 from models.tweets import Tweet, UpdateTweetModel, ApifyWebhook
-from config.database import collection_name
+from config.database import collection_name, test_collection
 from schema.schemas import list_serial, individual_serial
 from bson import ObjectId
 from datetime import datetime
@@ -147,13 +147,17 @@ async def trigger_apify_scraper(req: ScraperRequest):
     return {"msg": "scraper started", "run_id": run["id"]}
 
 @router.post("/webhooks/apify")
-async def handle_apify_webhooks(data: ApifyWebhook):
-    print("--- incoming apify webhook ---")
-    print(data.model_dump())
-    print("------------------------------")
-    
-    if data.eventType == "ACTOR.RUN.SUCCEEDED" and data.eventData:
-        run_id = data.eventData.get("actorRunId")
-        print(f"run {run_id} finished successfully!")
+async def handle_apify_webhook(data: ApifyWebhook):
+    if data.eventType == "ACTOR.RUN.SUCCEEDED" and data.resource:
+        dataset_id = data.resource.get("defaultDatasetId")
         
-    return {"status": "received"}
+        if dataset_id:
+            client = ApifyClient(os.getenv("APIFY_TOKEN"))
+            dataset_items = client.dataset(dataset_id).list_items().items
+            
+            if dataset_items:
+                # use the new collection reference here
+                result = test_collection.insert_many(dataset_items)
+                print(f"inserted {len(result.inserted_ids)} items")
+                
+    return {"status": "success"}

@@ -9,3 +9,5 @@ client = MongoClient(os.getenv("MONGO_URI"))
 db = client.db_tweets
 
 collection_name = db["clean_tweets"]
+
+test_collection = db["apify-integration-test"]
