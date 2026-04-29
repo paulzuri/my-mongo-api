@@ -4,6 +4,7 @@ from config.database import collection_name, test_collection
 from schema.schemas import list_serial, individual_serial
 from bson import ObjectId
 from datetime import datetime
+import json
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
 from pydantic import BaseModel
@@ -12,11 +13,24 @@ from pymongo.errors import PyMongoError
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
+MAX_ITEMS_PER_RUN = 20
 
 class ScraperRequest(BaseModel):
     query: str
     administracionZonal: str
+    origenDatos: str
+    tipoQuery: str
     tipoZona: str
+
+
+def build_query_context(req: ScraperRequest) -> dict:
+    return {
+        "query": req.query,
+        "administracionZonal": req.administracionZonal,
+        "origenDatos": req.origenDatos,
+        "tipoQuery": req.tipoQuery,
+        "tipoZona": req.tipoZona,
+    }
 
 # crud methods
 
@@ -123,21 +137,23 @@ async def trigger_apify_scraper(req: ScraperRequest):
         return {"error": "apify token missing"}
 
     client = ApifyClient(apify_token)
+    query_context = build_query_context(req)
 
     mapping_function = f"""(object) => {{
         return {{
             text: object.full_text || object.text,
-            administracionZonal: '{req.administracionZonal}',
-            origenDatos: 'apify scraper',
-            tipoQuery: 'twitter search',
-            tipoZona: '{req.tipoZona}',
+            administracionZonal: {json.dumps(req.administracionZonal)},
+            origenDatos: {json.dumps(req.origenDatos)},
+            tipoQuery: {json.dumps(req.tipoQuery)},
+            tipoZona: {json.dumps(req.tipoZona)},
+            query_context: {json.dumps(query_context)},
             createdAt: object.created_at
         }}
     }}"""
 
     run_input = {
         "searchTerms": [req.query],
-        "maxItems": 3, 
+        "maxItems": MAX_ITEMS_PER_RUN, 
         "sort": "Latest",
         "tweetLanguage": "es",
         "customMapFunction": mapping_function
@@ -151,6 +167,7 @@ async def trigger_apify_scraper(req: ScraperRequest):
 async def handle_apify_webhook(data: ApifyWebhook):
     if data.eventType == "ACTOR.RUN.SUCCEEDED" and data.resource:
         dataset_id = data.resource.get("defaultDatasetId")
+        run_id = data.resource.get("id")
         
         if dataset_id:
             try:
@@ -158,8 +175,15 @@ async def handle_apify_webhook(data: ApifyWebhook):
                 dataset_items = client.dataset(dataset_id).list_items().items
                 
                 if dataset_items:
-                    # try to insert the data
-                    result = test_collection.insert_many(dataset_items)
+                    normalized_items = []
+
+                    for item in dataset_items:
+                        item["apifyRunId"] = run_id
+                        item.setdefault("query_context", {})
+                        item["query_context"].setdefault("apifyRunId", run_id)
+                        normalized_items.append(item)
+
+                    result = test_collection.insert_many(normalized_items)
                     print(f"success: inserted {len(result.inserted_ids)} items into mongo")
                 else:
                     print("warning: apify dataset was empty, nothing to upload")
