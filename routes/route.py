@@ -1,19 +1,21 @@
 from fastapi import Query, APIRouter, HTTPException, status
 from models.tweets import Tweet, UpdateTweetModel, ApifyWebhook
-from config.database import collection_name, test_collection
+from config.database import collection_name, test_collection, scrape_run_collection
 from schema.schemas import list_serial, individual_serial
 from bson import ObjectId
 from datetime import datetime
 import json
+
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pymongo.errors import PyMongoError
 
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
 MAX_ITEMS_PER_RUN = 20
+MAX_ITEMS_HARD_LIMIT = 100
 
 class ScraperRequest(BaseModel):
     query: str
@@ -21,6 +23,16 @@ class ScraperRequest(BaseModel):
     origenDatos: str
     tipoQuery: str
     tipoZona: str
+    maxItems: int = MAX_ITEMS_PER_RUN
+
+    @field_validator("maxItems")
+    @classmethod
+    def clamp_max_items(cls, v):
+        if v < 1:
+            raise ValueError("Número máximo de tweets debe ser al menos 1")
+        if v > MAX_ITEMS_HARD_LIMIT:
+            raise ValueError(f"Número máximo de tweets  no puede superar {MAX_ITEMS_HARD_LIMIT}")
+        return v
 
 
 def build_query_context(req: ScraperRequest) -> dict:
@@ -146,20 +158,31 @@ async def trigger_apify_scraper(req: ScraperRequest):
             origenDatos: {json.dumps(req.origenDatos)},
             tipoQuery: {json.dumps(req.tipoQuery)},
             tipoZona: {json.dumps(req.tipoZona)},
-            query_context: {json.dumps(query_context)},
             createdAt: object.created_at
         }}
     }}"""
 
     run_input = {
         "searchTerms": [req.query],
-        "maxItems": MAX_ITEMS_PER_RUN, 
+        "maxItems": req.maxItems,  # was MAX_ITEMS_PER_RUN
         "sort": "Latest",
         "tweetLanguage": "es",
         "customMapFunction": mapping_function
     }
 
     run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
+
+    scrape_run_collection.update_one(
+        {"run_id": run["id"]},
+        {
+            "$set": {
+                "run_id": run["id"],
+                "query_context": query_context,
+                "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+            }
+        },
+        upsert=True,
+    )
     
     return {"msg": "scraper started", "run_id": run["id"]}
 
@@ -173,14 +196,15 @@ async def handle_apify_webhook(data: ApifyWebhook):
             try:
                 client = ApifyClient(os.getenv("APIFY_TOKEN"))
                 dataset_items = client.dataset(dataset_id).list_items().items
+                run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
+                query_context = run_record.get("query_context", {})
                 
                 if dataset_items:
                     normalized_items = []
 
                     for item in dataset_items:
                         item["apifyRunId"] = run_id
-                        item.setdefault("query_context", {})
-                        item["query_context"].setdefault("apifyRunId", run_id)
+                        item["query_context"] = {**query_context, "apifyRunId": run_id}
                         normalized_items.append(item)
 
                     result = test_collection.insert_many(normalized_items)
