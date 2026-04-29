@@ -1,0 +1,268 @@
+[
+    {
+        "administracion_zonal":"calderon",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia de calderon\" OR \"llano chico\") -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"calderon",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia de calderon\" OR \"llano chico\") -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"calderon",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.084717,-78.426257,6.87km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"calderon",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.084717,-78.426257,6.87km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"eloy alfaro",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (chilibulo OR solanda OR \"la magdalena\" OR \"san bartolo\" OR \"la ferroviaria\" OR chimbacalle OR \"la mena\" OR \"la argelia\") (quito OR pichincha OR ecuador OR uio) -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"eloy alfaro",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (chilibulo OR solanda OR \"la magdalena\" OR \"san bartolo\" OR \"la ferroviaria\" OR chimbacalle OR \"la mena\" OR \"la argelia\") (quito OR pichincha OR ecuador OR uio) -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"eloy alfaro",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (lloa) -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"eloy alfaro",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (lloa) -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"eloy alfaro",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.188790,-78.672753,21.09km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"eloy alfaro",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.188790,-78.672753,21.09km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"eugenio espejo",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"belisario quevedo\" OR \"iñaquito\" OR rumipamba OR jipijapa OR cochapamba OR \"parroquia de concepcion\" OR \"parroquia kennedy\" OR \"san isidro del inca\" OR \"la mariscal\") -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"eugenio espejo",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"belisario quevedo\" OR \"iñaquito\" OR rumipamba OR jipijapa OR cochapamba OR \"parroquia de concepcion\" OR \"parroquia kennedy\" OR \"san isidro del inca\" OR \"la mariscal\") -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"eugenio espejo",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (zambiza OR nayon OR guayllabamba OR perucho OR chavezpamba OR puellaro OR \"parroquia atahualpa\" OR \"san jose de minas\") -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"eugenio espejo",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (zambiza OR nayon OR guayllabamba OR perucho OR chavezpamba OR puellaro OR \"parroquia atahualpa\" OR \"san jose de minas\") -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"eugenio espejo",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.148905,-78.478724,10.02km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"eugenio espejo",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.148905,-78.478724,10.02km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"la delicia",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (carcelen OR \"urbanizacion el condado\" OR cotocollao OR ponceano OR \"comite del pueblo\") -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"la delicia",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (carcelen OR \"urbanizacion el condado\" OR cotocollao OR ponceano OR \"comite del pueblo\") -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"la delicia",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (calacali OR gualea OR nanega OR nanegalito OR \"parroquia nono\" OR \"parroquia pacto\" OR pomasqui OR \"parroquia san antonio\") -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"la delicia",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (calacali OR gualea OR nanega OR nanegalito OR \"parroquia nono\" OR \"parroquia pacto\" OR pomasqui OR \"parroquia san antonio\") -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"la delicia",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:0.154952,-78.623598,36.32km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"la delicia",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:0.154952,-78.623598,36.32km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"los chillos",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (amaguaña OR conocoto OR guangopolo OR alangasi OR \"parroquia la merced\" OR pintag) -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"los chillos",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (amaguaña OR conocoto OR guangopolo OR alangasi OR \"parroquia la merced\" OR pintag) -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"los chillos",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.410948,-78.386421,21.48km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"los chillos",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.410948,-78.386421,21.48km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"manuela saenz",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"centro histórico de quito\" OR \"parroquia la libertad\" OR \"parroquia san juan\" OR itchimbia OR puengasi) -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"manuela saenz",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"centro histórico de quito\" OR \"parroquia la libertad\" OR \"parroquia san juan\" OR itchimbia OR puengasi) -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"manuela saenz",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.195928,-78.511113,7.20km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"manuela saenz",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.195928,-78.511113,7.20km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"quitumbe",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (chillogallo OR \"parroquia la ecuatoriana\" OR quitumbe OR turubamba) -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"quitumbe",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias urbanas",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (chillogallo OR \"parroquia la ecuatoriana\" OR quitumbe OR turubamba) -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"quitumbe",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.307216,-78.556681,6.75km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"quitumbe",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.307216,-78.556681,6.75km -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"tumbaco",
+        "origen_datos":"medios",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia checa\" OR cumbaya OR \"el quinche\" OR pifo OR puembo OR yaruqui OR tababela OR tumbaco) -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"tumbaco",
+        "origen_datos":"personas",
+        "tipo_query":"palabras clave",
+        "tipo_zona":"parroquias rurales",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia checa\" OR cumbaya OR \"el quinche\" OR pifo OR puembo OR yaruqui OR tababela OR tumbaco) -futbol -gol -filter:retweets -filter:links"
+    },
+    {
+        "administracion_zonal":"tumbaco",
+        "origen_datos":"medios",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.205104,-78.305979,20.88km -futbol -gol -filter:retweets filter:links"
+    },
+    {
+        "administracion_zonal":"tumbaco",
+        "origen_datos":"personas",
+        "tipo_query":"geolocalizacion",
+        "tipo_zona":"geolocalizacion",
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.205104,-78.305979,20.88km -futbol -gol -filter:retweets -filter:links"
+    }
+]
