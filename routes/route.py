@@ -212,23 +212,11 @@ async def trigger_apify_scraper(req: ScraperRequest):
     client = ApifyClient(apify_token)
     query_context = build_query_context(req)
 
-    mapping_function = f"""(object) => {{
-        return {{
-            text: object.full_text || object.text,
-            administracionZonal: {json.dumps(req.administracionZonal)},
-            origenDatos: {json.dumps(req.origenDatos)},
-            tipoQuery: {json.dumps(req.tipoQuery)},
-            tipoZona: {json.dumps(req.tipoZona)},
-            createdAt: object.created_at
-        }}
-    }}"""
-
     run_input = {
         "searchTerms": [req.query],
         "maxItems": req.maxItems,  # was MAX_ITEMS_PER_RUN
         "sort": "Latest",
         "tweetLanguage": "es",
-        "customMapFunction": mapping_function
     }
 
     run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
