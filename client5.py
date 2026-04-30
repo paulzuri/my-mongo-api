@@ -94,8 +94,7 @@ if "preview_queries" not in st.session_state:
 if "last_results" not in st.session_state:
     st.session_state.last_results = []
 
-st.title("Twitter Query Builder")
-st.caption("La aplicación carga todas las consultas desde el JSON y solo permite ajustar el rango de fechas.")
+st.title("Tweet scraper")
 
 col1, col2 = st.columns(2)
 date_since = col1.date_input("Desde", value=date.today(), max_value=date.today())

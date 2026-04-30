@@ -12,4 +12,6 @@ collection_name = db["clean_tweets"]
 
 test_collection = db["test_collection"]
 
+test_collection_clean = db["test_collection_clean"]
+
 scrape_run_collection = db["scrape_runs"]

@@ -1,21 +1,39 @@
 from fastapi import Query, APIRouter, HTTPException, status
 from models.tweets import Tweet, UpdateTweetModel, ApifyWebhook
-from config.database import collection_name, test_collection, scrape_run_collection
+from config.database import *
 from schema.schemas import list_serial, individual_serial
 from bson import ObjectId
 from datetime import datetime
 import json
-
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
 from pydantic import BaseModel, field_validator
 from pymongo.errors import PyMongoError
+import re
+import emoji
+from pymongo.collection import ReturnDocument
 
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
 MAX_ITEMS_PER_RUN = 20
 MAX_ITEMS_HARD_LIMIT = 100
+
+BLACKLIST = {
+    "aucas", "paz en su tumba", "musulmanes", "clausuras", "cuenca",
+    "jeff bezos", "tramite", "colombia", "españa", "estadio",
+    "vidal", "muerte blanca", "madrid", "chucky", "eeuu", "farandula",
+    "pacientes", "patiño", "seguro médico", "hincha", "vacaciones",
+    "guatemala", "correistas", "político", "borja", "políticos",
+    "loja", "perú", "haiti", "correato", "marxismo", "reinoso",
+    "correa", "hinchada", "otavalo", "imbabura", "petro", "amlo",
+    "jesus", "yasuni", "nobel", "travesti", "dios"
+}
+
+BLACKLIST_PATTERN = re.compile(
+    '|'.join([rf'\b{re.escape(word)}\b' for word in BLACKLIST]),
+    re.IGNORECASE
+)
 
 class ScraperRequest(BaseModel):
     query: str
@@ -44,6 +62,49 @@ def build_query_context(req: ScraperRequest) -> dict:
         "tipoZona": req.tipoZona,
     }
 
+# cleaning scripts
+
+def clean_tweet_text(text: str) -> str:
+    if not isinstance(text, str):
+        return ""
+    text = emoji.replace_emoji(text, replace='')
+    text = re.sub(r'@\w+', '', text)
+    text = re.sub(r'http\S+|www\S+', '', text)
+    text = re.sub(r'#', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    return text.lower().strip()
+
+def clean_data(items: list) -> list:
+    seen_ids = set()
+    cleaned = []
+
+    for item in items:
+        tweet_id = item.get("id")
+
+        # deduplicate by id
+        if tweet_id in seen_ids:
+            continue
+        seen_ids.add(tweet_id)
+
+        # clean text
+        cleaned_text = clean_tweet_text(item.get("text", ""))
+
+        # skip if text matches blacklist
+        if BLACKLIST_PATTERN.search(cleaned_text):
+            continue
+
+        cleaned.append({
+            "id":                tweet_id,
+            "createdAt":         item.get("createdAt"),
+            "text":              cleaned_text,
+            "administracionZonal": item.get("administracionZonal"),
+            "origenDatos":       item.get("origenDatos"),
+            "tipoQuery":         item.get("tipoQuery"),
+            "tipoZona":          item.get("tipoZona"),
+        })
+
+    return cleaned
+
 # crud methods
 
 @router.get("/search")
@@ -57,7 +118,7 @@ async def get_tweets_by_fields(
 
     if id:
         if not ObjectId.is_valid(id):
-            raise HTTPException(status_code=400, detail="" \
+            raise HTTPException(status_code=400, detail="formato de ID inválido" \
             "")
         tweet = collection_name.find_one({"_id": ObjectId(id)})
         return [individual_serial(tweet)] if tweet else []
@@ -99,7 +160,7 @@ async def update_tweet(id: str, tweet: UpdateTweetModel):
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="id inválido")
 
-    update_data = {k: v for k, v in tweet.dict().items() if v is not None}
+    update_data = {k: v for k, v in tweet.model_dump().items() if v is not None}
 
     if not update_data:
         raise HTTPException(status_code=400, detail="no se proporcionaron campos para actualizar")
@@ -116,7 +177,7 @@ async def update_tweet(id: str, tweet: UpdateTweetModel):
     updated_tweet = collection_name.find_one_and_update(
         {"_id": ObjectId(id)},
         {"$set": update_data},
-        return_document=True
+        return_document=ReturnDocument.AFTER
     )
 
     if not updated_tweet:
@@ -209,6 +270,15 @@ async def handle_apify_webhook(data: ApifyWebhook):
 
                     result = test_collection.insert_many(normalized_items)
                     print(f"success: inserted {len(result.inserted_ids)} items into mongo")
+
+                    # clean and save to test_collection_clean
+                    cleaned_items = clean_data(normalized_items)
+                    if cleaned_items:
+                        test_collection_clean.insert_many(cleaned_items)
+                        print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
+                    else:
+                        print("warning: no items survived cleaning")
+                    
                 else:
                     print("warning: apify dataset was empty, nothing to upload")
                     
