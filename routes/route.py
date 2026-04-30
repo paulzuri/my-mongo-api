@@ -264,29 +264,41 @@ async def handle_apify_webhook(data: ApifyWebhook):
                     normalized_items = []
 
                     for item in dataset_items:
+                        if item.get("id") == -1:
+                            print("WARNING: saltando inserción de datos de relleno de KaitoEasyAPI")
+                            continue
                         item["apifyRunId"] = run_id
                         item["query_context"] = {**query_context, "apifyRunId": run_id}
                         normalized_items.append(item)
 
-                    result = test_collection.insert_many(normalized_items)
-                    print(f"success: inserted {len(result.inserted_ids)} items into mongo")
+                    incoming_ids = [item.get("id") for item in normalized_items]
+                    existing_ids = {
+                        doc["id"] for doc in test_collection.find(
+                            {"id": {"$in": incoming_ids}},
+                            {"id": 1, "_id": 0}
+                        )
+                    }
 
-                    # clean and save to test_collection_clean
-                    cleaned_items = clean_data(normalized_items)
-                    if cleaned_items:
-                        test_collection_clean.insert_many(cleaned_items)
-                        print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
+                    new_items = [item for item in normalized_items if item.get("id") not in existing_ids]
+
+                    if new_items:
+                        result = test_collection.insert_many(new_items)
+                        print(f"SUCCESS: insertados {len(result.inserted_ids)} items, se saltaron {len(existing_ids)} duplicados")
+                        cleaned_items = clean_data(new_items)
+                        if cleaned_items:
+                            test_collection_clean.insert_many(cleaned_items)
+                            print(f"SUCCESS: insertados {len(cleaned_items)} ítems limpios en test_collection_clean")
+                        else:
+                            print("WARNING: los tweets no pasaron la limpieza")
                     else:
-                        print("warning: no items survived cleaning")
-                    
+                        print("WARNING: todos los tweets fueron duplicados, no se insertó nada")
+
                 else:
-                    print("warning: apify dataset was empty, nothing to upload")
+                    print("WARNING: dataset vacío, no se insertó nada")
                     
             except PyMongoError as e:
-                # this catches database-specific errors (connection, permissions, etc.)
                 print(f"ERROR mongodb: {e}")
             except Exception as e:
-                # this catches everything else (apify client errors, network issues)
                 print(f"ERROR unexpected: {e}")
                 
     return {"status": "webhook processed"}
