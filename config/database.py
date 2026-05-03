@@ -10,8 +10,8 @@ db = client.db_tweets
 
 collection_name = db["clean_tweets"]
 
-test_collection = db["test_collection"]
+test_collection = db["test_raw_tweets"]
 
-test_collection_clean = db["test_collection_clean"]
+test_collection_clean = db["test_clean_tweets"]
 
-scrape_run_collection = db["scrape_runs"]
+scrape_run_collection = db["test_scrape_runs"]
