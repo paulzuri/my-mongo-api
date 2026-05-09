@@ -16,8 +16,8 @@ from pymongo.collection import ReturnDocument
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
-MAX_ITEMS_PER_RUN = 20
-MAX_ITEMS_HARD_LIMIT = 100
+DEFAULT_MAX_ITEMS_PER_RUN = 100
+MAX_ITEMS_HARD_LIMIT = 1000
 
 BLACKLIST = {
     "aucas", "paz en su tumba", "musulmanes", "clausuras", "cuenca",
@@ -41,7 +41,7 @@ class ScraperRequest(BaseModel):
     origenDatos: str
     tipoQuery: str
     tipoZona: str
-    maxItems: int = MAX_ITEMS_PER_RUN
+    maxItems: int = DEFAULT_MAX_ITEMS_PER_RUN
 
     @field_validator("maxItems")
     @classmethod

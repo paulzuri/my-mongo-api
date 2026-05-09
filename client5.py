@@ -103,12 +103,10 @@ date_until = col2.date_input("Hasta", value=date.today(), max_value=date.today()
 if date_since > date_until:
     st.warning("La fecha de inicio no puede ser mayor a la fecha de fin.")
 
-max_items = st.number_input(
+max_items = st.radio(
     "Máximo de tweets por query",
-    min_value=1,
-    max_value=100,
-    value=20,
-    step=1,
+    options=[100, 500, 1000],
+    horizontal=True,
 )
 
 st.divider()
