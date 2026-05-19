@@ -1,23 +1,21 @@
 from fastapi import Query, APIRouter, HTTPException, status
-from models.tweets import Tweet, UpdateTweetModel, ApifyWebhook
+from models.models import *
 from config.database import *
 from schema.schemas import list_serial, individual_serial
 from bson import ObjectId
 from datetime import datetime
-import json
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
-from pydantic import BaseModel, field_validator
 from pymongo.errors import PyMongoError
 import re
 import emoji
 from pymongo.collection import ReturnDocument
+import requests
 
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
-DEFAULT_MAX_ITEMS_PER_RUN = 100
-MAX_ITEMS_HARD_LIMIT = 1000
+
 
 BLACKLIST = {
     "aucas", "paz en su tumba", "musulmanes", "clausuras", "cuenca",
@@ -35,24 +33,6 @@ BLACKLIST_PATTERN = re.compile(
     re.IGNORECASE
 )
 
-class ScraperRequest(BaseModel):
-    query: str
-    administracionZonal: str
-    origenDatos: str
-    tipoQuery: str
-    tipoZona: str
-    maxItems: int = DEFAULT_MAX_ITEMS_PER_RUN
-
-    @field_validator("maxItems")
-    @classmethod
-    def clamp_max_items(cls, v):
-        if v < 1:
-            raise ValueError("Número máximo de tweets debe ser al menos 1")
-        if v > MAX_ITEMS_HARD_LIMIT:
-            raise ValueError(f"Número máximo de tweets  no puede superar {MAX_ITEMS_HARD_LIMIT}")
-        return v
-
-
 def build_query_context(req: ScraperRequest) -> dict:
     return {
         "query": req.query,
@@ -61,8 +41,6 @@ def build_query_context(req: ScraperRequest) -> dict:
         "tipoQuery": req.tipoQuery,
         "tipoZona": req.tipoZona,
     }
-
-# cleaning scripts
 
 def clean_tweet_text(text: str) -> str:
     if not isinstance(text, str):
@@ -105,104 +83,6 @@ def clean_data(items: list) -> list:
 
     return cleaned
 
-# crud methods
-
-@router.get("/search")
-async def get_tweets_by_fields(
-    id: str = Query(None),
-    administracionZonal: str = Query(None),
-    origenDatos: str = Query(None),
-    tipoQuery: str = Query(None),
-    tipoZona: str = Query(None)
-):
-
-    if id:
-        if not ObjectId.is_valid(id):
-            raise HTTPException(status_code=400, detail="formato de ID inválido" \
-            "")
-        tweet = collection_name.find_one({"_id": ObjectId(id)})
-        return [individual_serial(tweet)] if tweet else []
-
-    query_filter = {}
-    if administracionZonal: query_filter["administracionZonal"] = administracionZonal
-    if origenDatos: query_filter["origenDatos"] = origenDatos
-    if tipoQuery: query_filter["tipoQuery"] = tipoQuery
-    if tipoZona: query_filter["tipoZona"] = tipoZona
-
-    # .find() returns a cursor; list_serial converts the whole batch
-    tweets = list_serial(collection_name.find(query_filter))
-    
-    if not tweets:
-        raise HTTPException(status_code=404, detail="no se encontraron tweets con esos parámetros")
-        
-    return tweets
-
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def post_tweet(tweet: Tweet):
-
-    tweet_dict = dict(tweet)
-    
-    
-    if not tweet_dict.get("createdAt"):
-        
-        now = datetime.now()
-        tweet_dict["createdAt"] = now.strftime("%a %b %d %H:%M:%S +0000 %Y")
-    
-    
-    result = collection_name.insert_one(tweet_dict)
-    
-    # retornar el tweet para verificar insercion
-    new_tweet = collection_name.find_one({"_id": result.inserted_id})
-    return individual_serial(new_tweet)
-
-@router.put("/{id}")
-async def update_tweet(id: str, tweet: UpdateTweetModel):
-    if not ObjectId.is_valid(id):
-        raise HTTPException(status_code=400, detail="id inválido")
-
-    update_data = {k: v for k, v in tweet.model_dump().items() if v is not None}
-
-    if not update_data:
-        raise HTTPException(status_code=400, detail="no se proporcionaron campos para actualizar")
-
-    if "createdAt" in update_data:
-        try:
-            datetime.strptime(update_data["createdAt"], DATE_FORMAT)
-        except ValueError:
-            raise HTTPException(
-                status_code=400, 
-                detail="formato de fecha incorrecto. use el formato de twitter."
-            )
-
-    updated_tweet = collection_name.find_one_and_update(
-        {"_id": ObjectId(id)},
-        {"$set": update_data},
-        return_document=ReturnDocument.AFTER
-    )
-
-    if not updated_tweet:
-        raise HTTPException(status_code=404, detail="tweet no encontrado")
-
-    return individual_serial(updated_tweet)
-
-@router.delete("/{id}", status_code=status.HTTP_200_OK)
-async def delete_tweet(id: str):
-    if not ObjectId.is_valid(id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="error: formato de id inválido"
-        )
-
-    deleted_tweet = collection_name.find_one_and_delete({"_id": ObjectId(id)})
-
-    if not deleted_tweet:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="error: no existe un tweet con ese id"
-        )
-
-    return {"msg": f"tweet con id {id} ha sido eliminado correctamente"}
-
 @router.post("/trigger-scraper")
 async def trigger_apify_scraper(req: ScraperRequest):
     apify_token = os.getenv("APIFY_TOKEN")
@@ -234,6 +114,41 @@ async def trigger_apify_scraper(req: ScraperRequest):
     )
     
     return {"msg": "scraper started", "run_id": run["id"]}
+
+
+@router.get("/runs/{run_id}")
+async def get_run_status(run_id: str, maxItems: int = Query(1000)):
+    apify_token = os.getenv("APIFY_TOKEN")
+    if not apify_token:
+        return {"error": "apify token missing"}
+
+    # Fetch run details from Apify API
+    run_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={apify_token}"
+    try:
+        r = requests.get(run_url, timeout=10)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"error contacting apify: {e}")
+
+    if not r.ok:
+        raise HTTPException(status_code=r.status_code, detail=f"apify returned {r.status_code}")
+
+    run_data = r.json()
+    status = run_data.get("status")
+    dataset_id = run_data.get("defaultDatasetId")
+
+    items_count = 0
+    if dataset_id:
+        ds_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?limit={maxItems}&token={apify_token}"
+        try:
+            dsr = requests.get(ds_url, timeout=10)
+            if dsr.ok:
+                items = dsr.json()
+                if isinstance(items, list):
+                    items_count = len(items)
+        except Exception:
+            items_count = 0
+
+    return {"status": status, "datasetId": dataset_id, "itemsCount": items_count}
 
 @router.post("/webhooks/apify")
 async def handle_apify_webhook(data: ApifyWebhook):

@@ -1,27 +1,27 @@
 [
     {
-        "administracion_zonal":"calderon",
+        "administracion_zonal":"calderón",
         "origen_datos":"medios",
         "tipo_query":"palabras clave",
         "tipo_zona":"parroquias rurales",
-        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia de calderon\" OR \"llano chico\") -futbol -gol -filter:retweets filter:links"
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia de calderón\" OR \"llano chico\") -futbol -gol -filter:retweets filter:links"
     },
     {
-        "administracion_zonal":"calderon",
+        "administracion_zonal":"calderón",
         "origen_datos":"personas",
         "tipo_query":"palabras clave",
         "tipo_zona":"parroquias rurales",
-        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia de calderon\" OR \"llano chico\") -futbol -gol -filter:retweets -filter:links"
+        "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"parroquia de calderón\" OR \"llano chico\") -futbol -gol -filter:retweets -filter:links"
     },
     {
-        "administracion_zonal":"calderon",
+        "administracion_zonal":"calderón",
         "origen_datos":"medios",
         "tipo_query":"geolocalizacion",
         "tipo_zona":"geolocalizacion",
         "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.084717,-78.426257,6.87km -futbol -gol -filter:retweets filter:links"
     },
     {
-        "administracion_zonal":"calderon",
+        "administracion_zonal":"calderón",
         "origen_datos":"personas",
         "tipo_query":"geolocalizacion",
         "tipo_zona":"geolocalizacion",
@@ -182,28 +182,28 @@
         "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.410948,-78.386421,21.48km -futbol -gol -filter:retweets -filter:links"
     },
     {
-        "administracion_zonal":"manuela saenz",
+        "administracion_zonal":"manuela sáenz",
         "origen_datos":"medios",
         "tipo_query":"palabras clave",
         "tipo_zona":"parroquias urbanas",
         "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"centro histórico de quito\" OR \"parroquia la libertad\" OR \"parroquia san juan\" OR itchimbia OR puengasi) -futbol -gol -filter:retweets filter:links"
     },
     {
-        "administracion_zonal":"manuela saenz",
+        "administracion_zonal":"manuela sáenz",
         "origen_datos":"personas",
         "tipo_query":"palabras clave",
         "tipo_zona":"parroquias urbanas",
         "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) (\"centro histórico de quito\" OR \"parroquia la libertad\" OR \"parroquia san juan\" OR itchimbia OR puengasi) -futbol -gol -filter:retweets -filter:links"
     },
     {
-        "administracion_zonal":"manuela saenz",
+        "administracion_zonal":"manuela sáenz",
         "origen_datos":"medios",
         "tipo_query":"geolocalizacion",
         "tipo_zona":"geolocalizacion",
         "query_generado":"(extorsion OR robo OR sicariato OR asalto OR delincuencia OR inseguridad OR secuestro OR delito OR violencia OR criminal OR delincuentes OR \"lugar seguro\" OR seguridad OR tranquilo OR tranquilidad OR protegido OR paz OR calma OR policía OR patrullaje OR guardia) geocode:-0.195928,-78.511113,7.20km -futbol -gol -filter:retweets filter:links"
     },
     {
-        "administracion_zonal":"manuela saenz",
+        "administracion_zonal":"manuela sáenz",
         "origen_datos":"personas",
         "tipo_query":"geolocalizacion",
         "tipo_zona":"geolocalizacion",

@@ -1,2 +1,4 @@
 .env
 __pycache__
+scrapper.py
+queries_seguridad_quito.json
