@@ -1,15 +1,12 @@
-from fastapi import Query, APIRouter, HTTPException, status
+from fastapi import Query, APIRouter, HTTPException
 from models.models import *
 from config.database import *
-from schema.schemas import list_serial, individual_serial
-from bson import ObjectId
 from datetime import datetime
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
 from pymongo.errors import PyMongoError
 import re
 import emoji
-from pymongo.collection import ReturnDocument
 import requests
 
 router = APIRouter()
@@ -135,11 +132,13 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         raise HTTPException(status_code=r.status_code, detail=f"apify returned {r.status_code}")
 
     run_data = r.json()
-    status = run_data.get("status")
-    dataset_id = run_data.get("defaultDatasetId")
+    apify_run = run_data.get("data", run_data)
+    status = apify_run.get("status")
+    dataset_id = apify_run.get("defaultDatasetId")
     run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
 
     items_count = 0
+    processed_items_count = run_record.get("processedItemCount", 0)
     if dataset_id:
         try:
             stored_count = run_record.get("datasetItemCount")
@@ -155,6 +154,7 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         "status": status,
         "datasetId": dataset_id,
         "itemsCount": items_count,
+        "processedItemCount": processed_items_count,
         "webhookProcessed": run_record.get("webhookProcessed", False),
         "webhookStatus": run_record.get("webhookStatus", "unknown"),
         "queryContext": run_record.get("query_context", {}),
@@ -216,6 +216,8 @@ async def handle_apify_webhook(data: ApifyWebhook):
                     new_items = [item for item in normalized_items if item.get("id") not in existing_ids]
                     new_items_count = len(new_items)
 
+                    cleaned_items = []
+
                     if new_items:
                         result = test_collection.insert_many(new_items)
                         inserted_raw_count = len(result.inserted_ids)
@@ -247,6 +249,7 @@ async def handle_apify_webhook(data: ApifyWebhook):
                             f"{raw_item_count} items, but all {batch_deduped_count} normalized items "
                             "already existed in Mongo or were duplicate inside the batch; nothing inserted"
                         )
+                        cleaned_items = clean_data(new_items)
 
                     scrape_run_collection.update_one(
                         {"run_id": run_id},
@@ -255,6 +258,8 @@ async def handle_apify_webhook(data: ApifyWebhook):
                                 "webhookStatus": "processed",
                                 "webhookProcessed": True,
                                 "datasetItemCount": raw_item_count,
+                                "processedItemCount": new_items_count,
+                                "cleanedItemCount": len(cleaned_items),
                                 "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
                             }
                         },
