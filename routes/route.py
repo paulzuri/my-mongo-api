@@ -107,6 +107,8 @@ async def trigger_apify_scraper(req: ScraperRequest):
             "$set": {
                 "run_id": run["id"],
                 "query_context": query_context,
+                "status": "triggered",
+                "webhookProcessed": False,
                 "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
             }
         },
@@ -135,6 +137,7 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     run_data = r.json()
     status = run_data.get("status")
     dataset_id = run_data.get("defaultDatasetId")
+    run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
 
     items_count = 0
     if dataset_id:
@@ -148,7 +151,14 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         except Exception:
             items_count = 0
 
-    return {"status": status, "datasetId": dataset_id, "itemsCount": items_count}
+    return {
+        "status": status,
+        "datasetId": dataset_id,
+        "itemsCount": items_count,
+        "webhookProcessed": run_record.get("webhookProcessed", False),
+        "webhookStatus": run_record.get("webhookStatus", "unknown"),
+        "queryContext": run_record.get("query_context", {}),
+    }
 
 @router.post("/webhooks/apify")
 async def handle_apify_webhook(data: ApifyWebhook):
@@ -164,6 +174,7 @@ async def handle_apify_webhook(data: ApifyWebhook):
                 query_context = run_record.get("query_context", {})
 
                 if dataset_items:
+                    raw_item_count = len(dataset_items)
                     normalized_items = []
 
                     for item in dataset_items:
@@ -177,6 +188,8 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         item["tipoZona"] = query_context.get("tipoZona")
                         normalized_items.append(item)
 
+                    normalized_count = len(normalized_items)
+
                     # deduplicate within the current batch
                     seen = set()
                     unique_items = []
@@ -185,6 +198,9 @@ async def handle_apify_webhook(data: ApifyWebhook):
                             seen.add(item.get("id"))
                             unique_items.append(item)
                     normalized_items = unique_items
+
+                    batch_deduped_count = len(normalized_items)
+                    batch_duplicate_count = normalized_count - batch_deduped_count
 
                     # filter out tweets already in mongo
                     incoming_ids = [item.get("id") for item in normalized_items]
@@ -195,20 +211,53 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         )
                     }
 
+                    existing_duplicate_count = len(existing_ids)
+
                     new_items = [item for item in normalized_items if item.get("id") not in existing_ids]
+                    new_items_count = len(new_items)
 
                     if new_items:
                         result = test_collection.insert_many(new_items)
-                        print(f"success: inserted {len(result.inserted_ids)} items, skipped {len(existing_ids)} duplicates")
+                        inserted_raw_count = len(result.inserted_ids)
+                        print(
+                            "success: run returned "
+                            f"{raw_item_count} items, "
+                            f"{normalized_count} remained after cleaning metadata, "
+                            f"{batch_duplicate_count} removed as duplicates inside the batch, "
+                            f"{existing_duplicate_count} already existed in Mongo, "
+                            f"{new_items_count} inserted as raw items ({inserted_raw_count} inserted records)"
+                        )
 
                         cleaned_items = clean_data(new_items)
                         if cleaned_items:
-                            test_collection_clean.insert_many(cleaned_items)
-                            print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
+                            cleaned_insert_result = test_collection_clean.insert_many(cleaned_items)
+                            print(
+                                "success: cleaned pipeline kept "
+                                f"{len(cleaned_items)} items and inserted "
+                                f"{len(cleaned_insert_result.inserted_ids)} cleaned items into test_collection_clean"
+                            )
                         else:
-                            print("warning: no items survived cleaning")
+                            print(
+                                "warning: no items survived text cleaning after raw insertion; "
+                                f"run returned {raw_item_count} items and {new_items_count} were inserted raw"
+                            )
                     else:
-                        print("warning: all incoming tweets were duplicates, nothing inserted")
+                        print(
+                            "warning: run returned "
+                            f"{raw_item_count} items, but all {batch_deduped_count} normalized items "
+                            "already existed in Mongo or were duplicate inside the batch; nothing inserted"
+                        )
+
+                    scrape_run_collection.update_one(
+                        {"run_id": run_id},
+                        {
+                            "$set": {
+                                "webhookStatus": "processed",
+                                "webhookProcessed": True,
+                                "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                            }
+                        },
+                    )
 
                 else:
                     print("warning: apify dataset was empty, nothing to upload")
