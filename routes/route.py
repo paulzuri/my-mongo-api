@@ -141,13 +141,13 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
 
     items_count = 0
     if dataset_id:
-        ds_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?limit={maxItems}&token={apify_token}"
         try:
-            dsr = requests.get(ds_url, timeout=10)
-            if dsr.ok:
-                items = dsr.json()
-                if isinstance(items, list):
-                    items_count = len(items)
+            stored_count = run_record.get("datasetItemCount")
+            if stored_count is not None:
+                items_count = stored_count
+            else:
+                client = ApifyClient(apify_token)
+                items_count = len(client.dataset(dataset_id).list_items(limit=maxItems).items)
         except Exception:
             items_count = 0
 
@@ -254,6 +254,7 @@ async def handle_apify_webhook(data: ApifyWebhook):
                             "$set": {
                                 "webhookStatus": "processed",
                                 "webhookProcessed": True,
+                                "datasetItemCount": raw_item_count,
                                 "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
                             }
                         },
