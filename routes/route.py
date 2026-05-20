@@ -138,7 +138,11 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
 
     items_count = 0
-    processed_items_count = run_record.get("processedItemCount", 0)
+    normalized_items_count = run_record.get("normalizedItemCount", 0)
+    batch_duplicate_count = run_record.get("batchDuplicateCount", 0)
+    existing_duplicate_count = run_record.get("existingDuplicateCount", 0)
+    inserted_raw_count = run_record.get("insertedRawCount", 0)
+    cleaned_items_count = run_record.get("cleanedItemCount", 0)
     if dataset_id:
         try:
             stored_count = run_record.get("datasetItemCount")
@@ -154,7 +158,11 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         "status": status,
         "datasetId": dataset_id,
         "itemsCount": items_count,
-        "processedItemCount": processed_items_count,
+        "normalizedItemCount": normalized_items_count,
+        "batchDuplicateCount": batch_duplicate_count,
+        "existingDuplicateCount": existing_duplicate_count,
+        "insertedRawCount": inserted_raw_count,
+        "cleanedItemCount": cleaned_items_count,
         "webhookProcessed": run_record.get("webhookProcessed", False),
         "webhookStatus": run_record.get("webhookStatus", "unknown"),
         "queryContext": run_record.get("query_context", {}),
@@ -258,7 +266,10 @@ async def handle_apify_webhook(data: ApifyWebhook):
                                 "webhookStatus": "processed",
                                 "webhookProcessed": True,
                                 "datasetItemCount": raw_item_count,
-                                "processedItemCount": new_items_count,
+                                "normalizedItemCount": normalized_count,
+                                "batchDuplicateCount": batch_duplicate_count,
+                                "existingDuplicateCount": existing_duplicate_count,
+                                "insertedRawCount": new_items_count,
                                 "cleanedItemCount": len(cleaned_items),
                                 "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
                             }
