@@ -86,33 +86,37 @@ async def trigger_apify_scraper(req: ScraperRequest):
     if not apify_token:
         return {"error": "apify token missing"}
 
-    client = ApifyClient(apify_token)
-    query_context = build_query_context(req)
+    try:
+        client = ApifyClient(apify_token)
+        query_context = build_query_context(req)
 
-    run_input = {
-        "searchTerms": [req.query],
-        "maxItems": req.maxItems,  # was MAX_ITEMS_PER_RUN
-        "sort": "Latest",
-        "tweetLanguage": "es",
-    }
+        run_input = {
+            "searchTerms": [req.query],
+            "maxItems": req.maxItems,  # was MAX_ITEMS_PER_RUN
+            "sort": "Latest",
+            "tweetLanguage": "es",
+        }
 
-    run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
+        run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
 
-    scrape_run_collection.update_one(
-        {"run_id": run["id"]},
-        {
-            "$set": {
-                "run_id": run["id"],
-                "query_context": query_context,
-                "status": "triggered",
-                "webhookProcessed": False,
-                "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
-            }
-        },
-        upsert=True,
-    )
-    
-    return {"msg": "scraper started", "run_id": run["id"]}
+        scrape_run_collection.update_one(
+            {"run_id": run["id"]},
+            {
+                "$set": {
+                    "run_id": run["id"],
+                    "query_context": query_context,
+                    "status": "triggered",
+                    "webhookProcessed": False,
+                    "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                }
+            },
+            upsert=True,
+        )
+        
+        return {"msg": "scraper started", "run_id": run["id"]}
+    except Exception as e:
+        print(f"ERROR triggering apify: {e}")
+        return {"error": f"Failed to start scraper: {str(e)}"}
 
 
 @router.get("/runs/{run_id}")
@@ -143,6 +147,7 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     existing_duplicate_count = run_record.get("existingDuplicateCount", 0)
     inserted_raw_count = run_record.get("insertedRawCount", 0)
     cleaned_items_count = run_record.get("cleanedItemCount", 0)
+    error_reason = run_record.get("errorReason")
     if dataset_id:
         try:
             stored_count = run_record.get("datasetItemCount")
@@ -163,6 +168,7 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         "existingDuplicateCount": existing_duplicate_count,
         "insertedRawCount": inserted_raw_count,
         "cleanedItemCount": cleaned_items_count,
+        "errorReason": error_reason,
         "webhookProcessed": run_record.get("webhookProcessed", False),
         "webhookStatus": run_record.get("webhookStatus", "unknown"),
         "queryContext": run_record.get("query_context", {}),
@@ -170,6 +176,26 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
 
 @router.post("/webhooks/apify")
 async def handle_apify_webhook(data: ApifyWebhook):
+    if data.eventType == "ACTOR.RUN.FAILED" and data.resource:
+        run_id = data.resource.get("id")
+        error_info = data.resource.get("errorInfo") or {}
+        error_message = error_info.get("message", "Unknown error")
+        
+        print(f"ERROR: Apify run {run_id} failed: {error_message}")
+        
+        scrape_run_collection.update_one(
+            {"run_id": run_id},
+            {
+                "$set": {
+                    "webhookStatus": "failed",
+                    "webhookProcessed": True,
+                    "errorReason": f"Apify run failed: {error_message}",
+                    "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                }
+            },
+        )
+        return {"status": "webhook processed - run failed"}
+
     if data.eventType == "ACTOR.RUN.SUCCEEDED" and data.resource:
         dataset_id = data.resource.get("defaultDatasetId")
         run_id = data.resource.get("id")
@@ -183,6 +209,24 @@ async def handle_apify_webhook(data: ApifyWebhook):
 
                 if dataset_items:
                     raw_item_count = len(dataset_items)
+                    filler_only_count = sum(1 for item in dataset_items if item.get("id") == -1)
+                    
+                    if filler_only_count == raw_item_count:
+                        print(f"warning: run returned {raw_item_count} items but all were filler data")
+                        scrape_run_collection.update_one(
+                            {"run_id": run_id},
+                            {
+                                "$set": {
+                                    "webhookStatus": "no_real_data",
+                                    "webhookProcessed": True,
+                                    "datasetItemCount": raw_item_count,
+                                    "errorReason": "No real data found, only filler",
+                                    "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                                }
+                            },
+                        )
+                        return {"status": "webhook processed - no real data"}
+                    
                     normalized_items = []
 
                     for item in dataset_items:
@@ -259,6 +303,25 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         )
                         cleaned_items = clean_data(new_items)
 
+                        scrape_run_collection.update_one(
+                            {"run_id": run_id},
+                            {
+                                "$set": {
+                                    "webhookStatus": "all_duplicates",
+                                    "webhookProcessed": True,
+                                    "datasetItemCount": raw_item_count,
+                                    "normalizedItemCount": normalized_count,
+                                    "batchDuplicateCount": batch_duplicate_count,
+                                    "existingDuplicateCount": existing_duplicate_count,
+                                    "insertedRawCount": 0,
+                                    "cleanedItemCount": 0,
+                                    "errorReason": "All items were duplicates",
+                                    "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                                }
+                            },
+                        )
+                        return {"status": "webhook processed - all duplicates"}
+
                     scrape_run_collection.update_one(
                         {"run_id": run_id},
                         {
@@ -278,10 +341,46 @@ async def handle_apify_webhook(data: ApifyWebhook):
 
                 else:
                     print("warning: apify dataset was empty, nothing to upload")
+                    scrape_run_collection.update_one(
+                        {"run_id": run_id},
+                        {
+                            "$set": {
+                                "webhookStatus": "empty_dataset",
+                                "webhookProcessed": True,
+                                "datasetItemCount": 0,
+                                "errorReason": "No results returned from Apify",
+                                "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                            }
+                        },
+                    )
 
             except PyMongoError as e:
                 print(f"ERROR mongodb: {e}")
+                error_msg = str(e)
+                scrape_run_collection.update_one(
+                    {"run_id": run_id},
+                    {
+                        "$set": {
+                            "webhookStatus": "db_error",
+                            "webhookProcessed": True,
+                            "errorReason": f"Database error: {error_msg}",
+                            "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                        }
+                    },
+                )
             except Exception as e:
                 print(f"ERROR unexpected: {e}")
+                error_msg = str(e)
+                scrape_run_collection.update_one(
+                    {"run_id": run_id},
+                    {
+                        "$set": {
+                            "webhookStatus": "unexpected_error",
+                            "webhookProcessed": True,
+                            "errorReason": f"Unexpected error: {error_msg}",
+                            "webhookProcessedAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                        }
+                    },
+                )
 
     return {"status": "webhook processed"}
