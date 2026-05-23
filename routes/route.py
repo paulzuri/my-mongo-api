@@ -87,14 +87,14 @@ def clean_data(items: list) -> list:
 async def trigger_apify_scraper(req: ScraperRequest):
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
-        return {"error": "apify token missing"}
+        return {"error": "No existe el token de Apify"}
 
     client = ApifyClient(apify_token)
     query_context = build_query_context(req)
 
     run_input = {
         "searchTerms": [req.query],
-        "maxItems": req.maxItems,  # was MAX_ITEMS_PER_RUN
+        "maxItems": req.maxItems,  
         "sort": "Latest",
         "tweetLanguage": "es",
     }
