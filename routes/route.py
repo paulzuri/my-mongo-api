@@ -145,7 +145,24 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         except Exception:
             items_count = 0
 
-    return {"status": status, "datasetId": dataset_id, "itemsCount": items_count}
+    tweets_clean_inserted = 0
+    is_processed_in_mongo = False
+    
+    try:
+        run_record = scrape_run_collection.find_one({"run_id": run_id})
+        if run_record and "cleaned_tweets_count" in run_record:
+            tweets_clean_inserted = run_record["cleaned_tweets_count"]
+            is_processed_in_mongo = True
+    except Exception:
+        pass
+
+    return {
+        "status": status, 
+        "datasetId": dataset_id, 
+        "itemsCount": items_count,
+        "tweetsCleanInserted": tweets_clean_inserted,
+        "processedInMongo": is_processed_in_mongo
+    }
 
 @router.post("/webhooks/apify")
 async def handle_apify_webhook(data: ApifyWebhook):
@@ -202,8 +219,16 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         if cleaned_items:
                             test_collection_clean.insert_many(cleaned_items)
                             print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
+                            scrape_run_collection.update_one(
+                                {"run_id": run_id},
+                                {"$set": {"cleaned_tweets_count": len(cleaned_items), "processed": True}}
+                            )
                         else:
                             print("warning: no items survived cleaning")
+                            scrape_run_collection.update_one(
+                                {"run_id": run_id},
+                                {"$set": {"cleaned_tweets_count": 0, "processed": True}}
+                            )
                     else:
                         print("warning: all incoming tweets were duplicates, nothing inserted")
 

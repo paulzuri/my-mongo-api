@@ -165,8 +165,10 @@ if st.button("Ejecutar queries seleccionados", use_container_width=True, disable
                 all_done = False
                 status_data = check_run_status(run["run_id"])
                 current_status = status_data.get("status")
+                is_ready_in_db = status_data.get("processedInMongo", False)
                 
-                if current_status == "SUCCEEDED":
+                if current_status == "SUCCEEDED" and is_ready_in_db:
+                    clean_count = status_data.get("tweetsCleanInserted", 0)
                     run["status_block"].success("Listo")
                     run["completed"] = True
                 elif current_status in ["FAILED", "ABORTED", "TIMED-OUT", "ERROR"]:
