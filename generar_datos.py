@@ -108,6 +108,7 @@ selected_zones = st.multiselect(
     "Selección de administraciones zonales",
     options=all_zones,
     default=all_zones,
+    format_func=lambda x: str(x).title(),
     placeholder="Elige una o más administraciones zonales"
 )
 
@@ -123,44 +124,56 @@ if st.button("Ejecutar queries seleccionados", use_container_width=True, disable
             queries_by_zone[zone] = []
         queries_by_zone[zone].append(q)
     
+    tracked_runs = []
+    
     for zone, items in queries_by_zone.items():
-        with st.container(border=True):
-            st.markdown(f"### {zone.title()}")
-            
-            for q in items:
+        st.subheader(zone.title())
+        
+        for q in items:
+            with st.container(border=True):
                 st.markdown(f"**Query {q['index']}**")
                 
-                status_placeholder = st.empty()
+                status_block = st.empty()
                 
-                st.markdown(f"**Origen de datos:** {q['origen_datos']}")
-                st.markdown(f"**Tipo query:** {q['tipo_query']}")
-                st.markdown(f"**Tipo zona:** {q['tipo_zona']}")
-                st.markdown(f"**Query generado:** `{q['final_query']}`")
+                st.markdown(f"**Origen de datos:** {str(q['origen_datos']).title()}")
+                st.markdown(f"**Tipo de query:** {str(q['tipo_query']).capitalize()}")
+                st.markdown(f"**Tipo de zona:** {str(q['tipo_zona']).capitalize()}")
                 
-                with status_placeholder.container():
-                    with st.spinner("Iniciando tarea en la API..."):
-                        trigger_result = run_scraper(q)
+                status_block.warning("Iniciando tarea...")
+                
+                trigger_result = run_scraper(q)
                 
                 if "error" in trigger_result:
-                    status_placeholder.error(f"Error al iniciar: {trigger_result['error']}")
-                    st.divider()
+                    status_block.error(f"Error: {trigger_result['error']}")
+                else:
+                    run_id = trigger_result.get("run_id")
+                    tracked_runs.append({
+                        "run_id": run_id,
+                        "status_block": status_block,
+                        "completed": False
+                    })
+        st.write("")
+
+    if tracked_runs:
+        while True:
+            all_done = True
+            
+            for run in tracked_runs:
+                if run["completed"]:
                     continue
-                    
-                run_id = trigger_result.get("run_id")
                 
-                while True:
-                    with status_placeholder.container():
-                        with st.spinner(f"Generando datos en Apify... (Run ID: {run_id})"):
-                            status_data = check_run_status(run_id)
-                            current_status = status_data.get("status")
-                    
-                    if current_status == "SUCCEEDED":
-                        status_placeholder.success(f"Completado")
-                        break
-                    elif current_status in ["FAILED", "ABORTED", "TIMED-OUT", "ERROR"]:
-                        status_placeholder.error(f"La tarea falló en Apify con estado: {current_status}")
-                        break
-                        
-                    time.sleep(2)
+                all_done = False
+                status_data = check_run_status(run["run_id"])
+                current_status = status_data.get("status")
                 
-                st.divider()
+                if current_status == "SUCCEEDED":
+                    run["status_block"].success("Listo")
+                    run["completed"] = True
+                elif current_status in ["FAILED", "ABORTED", "TIMED-OUT", "ERROR"]:
+                    run["status_block"].error(f"Fallo ({current_status})")
+                    run["completed"] = True
+            
+            if all_done:
+                break
+                
+            time.sleep(2)
