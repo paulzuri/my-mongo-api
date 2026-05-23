@@ -1,15 +1,13 @@
-from fastapi import Query, APIRouter, HTTPException, status
+from fastapi import Query, APIRouter, HTTPException
 from models.models import *
 from config.database import *
 from schema.schemas import list_serial, individual_serial
-from bson import ObjectId
 from datetime import datetime
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
 from pymongo.errors import PyMongoError
 import re
 import emoji
-from pymongo.collection import ReturnDocument
 import requests
 
 router = APIRouter()
@@ -122,7 +120,6 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     if not apify_token:
         return {"error": "apify token missing"}
 
-    # Fetch run details from Apify API
     run_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={apify_token}"
     try:
         r = requests.get(run_url, timeout=10)
