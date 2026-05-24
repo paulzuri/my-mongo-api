@@ -218,16 +218,9 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         if cleaned_items:
                             test_collection_clean.insert_many(cleaned_items)
                             print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
-                            scrape_run_collection.update_one(
-                                {"run_id": run_id},
-                                {"$set": {"cleaned_tweets_count": len(cleaned_items), "processed": True}}
-                            )
+                            final_cleaned_count = len(cleaned_items)
                         else:
                             print("warning: no items survived cleaning")
-                            scrape_run_collection.update_one(
-                                {"run_id": run_id},
-                                {"$set": {"cleaned_tweets_count": 0, "processed": True}}
-                            )
                     else:
                         print("warning: all incoming tweets were duplicates, nothing inserted")
 
@@ -242,10 +235,13 @@ async def handle_apify_webhook(data: ApifyWebhook):
                 try:
                     scrape_run_collection.update_one(
                         {"run_id": run_id},
-                        {"$set": {"cleaned_tweets_count": final_cleaned_count, "processed": True}},
+                        {"$set": {
+                            "cleaned_tweets_count": final_cleaned_count, 
+                            "processed": True
+                        }},
                         upsert=True
                     )
                 except Exception as db_err:
-                    print(f"ERROR db: {db_err}")
+                    print(f"ERROR db en bloque finally: {db_err}")
 
     return {"status": "webhook processed"}
