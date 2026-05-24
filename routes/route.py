@@ -127,7 +127,7 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     if not r.ok:
         raise HTTPException(status_code=r.status_code, detail=f"apify returned {r.status_code}")
 
-    run_data = r.json()
+    run_data = r.json().get("data", {}) 
     status = run_data.get("status")
     dataset_id = run_data.get("defaultDatasetId")
 
