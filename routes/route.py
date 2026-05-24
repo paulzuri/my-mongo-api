@@ -170,6 +170,8 @@ async def handle_apify_webhook(data: ApifyWebhook):
         run_id = data.resource.get("id")
 
         if dataset_id:
+            final_cleaned_count = 0
+
             try:
                 client = ApifyClient(os.getenv("APIFY_TOKEN"))
                 dataset_items = client.dataset(dataset_id).list_items().items
@@ -190,7 +192,6 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         item["tipoZona"] = query_context.get("tipoZona")
                         normalized_items.append(item)
 
-                    # deduplicate within the current batch
                     seen = set()
                     unique_items = []
                     for item in normalized_items:
@@ -199,7 +200,6 @@ async def handle_apify_webhook(data: ApifyWebhook):
                             unique_items.append(item)
                     normalized_items = unique_items
 
-                    # filter out tweets already in mongo
                     incoming_ids = [item.get("id") for item in normalized_items]
                     existing_ids = {
                         doc["id"] for doc in test_collection.find(
@@ -238,5 +238,14 @@ async def handle_apify_webhook(data: ApifyWebhook):
                 print(f"ERROR mongodb: {e}")
             except Exception as e:
                 print(f"ERROR unexpected: {e}")
+            finally: 
+                try:
+                    scrape_run_collection.update_one(
+                        {"run_id": run_id},
+                        {"$set": {"cleaned_tweets_count": final_cleaned_count, "processed": True}},
+                        upsert=True
+                    )
+                except Exception as db_err:
+                    print(f"ERROR db: {db_err}")
 
     return {"status": "webhook processed"}
