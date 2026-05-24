@@ -1,6 +1,7 @@
 from fastapi import Query, APIRouter, HTTPException
 from models.models import *
 from config.database import *
+from schema.schemas import list_serial, individual_serial
 from datetime import datetime
 import os
 from apify_client import ApifyClient  # pyright: ignore[reportMissingImports]
@@ -84,39 +85,33 @@ def clean_data(items: list) -> list:
 async def trigger_apify_scraper(req: ScraperRequest):
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
-        return {"error": "apify token missing"}
+        return {"error": "No existe el token de Apify"}
 
-    try:
-        client = ApifyClient(apify_token)
-        query_context = build_query_context(req)
+    client = ApifyClient(apify_token)
+    query_context = build_query_context(req)
 
-        run_input = {
-            "searchTerms": [req.query],
-            "maxItems": req.maxItems,  # was MAX_ITEMS_PER_RUN
-            "sort": "Latest",
-            "tweetLanguage": "es",
-        }
+    run_input = {
+        "searchTerms": [req.query],
+        "maxItems": req.maxItems,  
+        "sort": "Latest",
+        "tweetLanguage": "es",
+    }
 
-        run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
+    run = client.actor("kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest").start(run_input=run_input)
 
-        scrape_run_collection.update_one(
-            {"run_id": run["id"]},
-            {
-                "$set": {
-                    "run_id": run["id"],
-                    "query_context": query_context,
-                    "status": "triggered",
-                    "webhookProcessed": False,
-                    "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
-                }
-            },
-            upsert=True,
-        )
-        
-        return {"msg": "scraper started", "run_id": run["id"]}
-    except Exception as e:
-        print(f"ERROR triggering apify: {e}")
-        return {"error": f"Failed to start scraper: {str(e)}"}
+    scrape_run_collection.update_one(
+        {"run_id": run["id"]},
+        {
+            "$set": {
+                "run_id": run["id"],
+                "query_context": query_context,
+                "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+            }
+        },
+        upsert=True,
+    )
+    
+    return {"msg": "scraper started", "run_id": run["id"]}
 
 
 @router.get("/runs/{run_id}")
@@ -125,7 +120,6 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     if not apify_token:
         return {"error": "apify token missing"}
 
-    # Fetch run details from Apify API
     run_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={apify_token}"
     try:
         r = requests.get(run_url, timeout=10)
@@ -159,19 +153,23 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         except Exception:
             items_count = 0
 
+    tweets_clean_inserted = 0
+    is_processed_in_mongo = False
+    
+    try:
+        run_record = scrape_run_collection.find_one({"run_id": run_id})
+        if run_record and "cleaned_tweets_count" in run_record:
+            tweets_clean_inserted = run_record["cleaned_tweets_count"]
+            is_processed_in_mongo = True
+    except Exception:
+        pass
+
     return {
-        "status": status,
-        "datasetId": dataset_id,
+        "status": status, 
+        "datasetId": dataset_id, 
         "itemsCount": items_count,
-        "normalizedItemCount": normalized_items_count,
-        "batchDuplicateCount": batch_duplicate_count,
-        "existingDuplicateCount": existing_duplicate_count,
-        "insertedRawCount": inserted_raw_count,
-        "cleanedItemCount": cleaned_items_count,
-        "errorReason": error_reason,
-        "webhookProcessed": run_record.get("webhookProcessed", False),
-        "webhookStatus": run_record.get("webhookStatus", "unknown"),
-        "queryContext": run_record.get("query_context", {}),
+        "tweetsCleanInserted": tweets_clean_inserted,
+        "processedInMongo": is_processed_in_mongo
     }
 
 @router.post("/webhooks/apify")
@@ -284,16 +282,17 @@ async def handle_apify_webhook(data: ApifyWebhook):
 
                         cleaned_items = clean_data(new_items)
                         if cleaned_items:
-                            cleaned_insert_result = test_collection_clean.insert_many(cleaned_items)
-                            print(
-                                "success: cleaned pipeline kept "
-                                f"{len(cleaned_items)} items and inserted "
-                                f"{len(cleaned_insert_result.inserted_ids)} cleaned items into test_collection_clean"
+                            test_collection_clean.insert_many(cleaned_items)
+                            print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
+                            scrape_run_collection.update_one(
+                                {"run_id": run_id},
+                                {"$set": {"cleaned_tweets_count": len(cleaned_items), "processed": True}}
                             )
                         else:
-                            print(
-                                "warning: no items survived text cleaning after raw insertion; "
-                                f"run returned {raw_item_count} items and {new_items_count} were inserted raw"
+                            print("warning: no items survived cleaning")
+                            scrape_run_collection.update_one(
+                                {"run_id": run_id},
+                                {"$set": {"cleaned_tweets_count": 0, "processed": True}}
                             )
                     else:
                         print(
