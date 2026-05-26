@@ -159,10 +159,13 @@ async def handle_apify_webhook(data: ApifyWebhook):
                 if dataset_items:
                     print(f"[{run_id}] Dataset recibido: {len(dataset_items)} tweets en total")
 
+                    filler_count = sum(1 for item in dataset_items if item.get("id") == -1)
+                    if filler_count > 0:
+                        print(f"[{run_id}] Advertencia: omitiendo {filler_count} items de relleno de Apify (id=-1)")
+
                     normalized_items = []
                     for item in dataset_items:
                         if item.get("id") == -1:
-                            print(f"[{run_id}] Advertencia: omitiendo item de relleno de Apify (id=-1)")
                             continue
                         item["apifyRunId"] = run_id
                         item["administracionZonal"] = query_context.get("administracionZonal")
