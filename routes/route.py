@@ -49,26 +49,16 @@ def clean_tweet_text(text: str) -> str:
     return text.lower().strip()
 
 def clean_data(items: list) -> list:
-    seen_ids = set()
     cleaned = []
 
     for item in items:
-        tweet_id = item.get("id")
-
-        # deduplicate by id
-        if tweet_id in seen_ids:
-            continue
-        seen_ids.add(tweet_id)
-
-        # clean text
         cleaned_text = clean_tweet_text(item.get("text", ""))
 
-        # skip if text matches blacklist
         if BLACKLIST_PATTERN.search(cleaned_text):
             continue
 
         cleaned.append({
-            "id":                tweet_id,
+            "id":                item.get("id"),
             "createdAt":         item.get("createdAt"),
             "text":              cleaned_text,
             "administracionZonal": item.get("administracionZonal"),
@@ -103,7 +93,7 @@ async def trigger_apify_scraper(req: ScraperRequest):
             "$set": {
                 "run_id": run["id"],
                 "query_context": query_context,
-                "createdAt": datetime.now().strftime("%a %b %d %H:%M:%S +0000 %Y"),
+                "createdAt": datetime.now().strftime(DATE_FORMAT),
             }
         },
         upsert=True,
@@ -159,11 +149,12 @@ async def handle_apify_webhook(data: ApifyWebhook):
                 query_context = run_record.get("query_context", {})
 
                 if dataset_items:
-                    normalized_items = []
+                    print(f"[{run_id}] Dataset recibido: {len(dataset_items)} tweets en total")
 
+                    normalized_items = []
                     for item in dataset_items:
                         if item.get("id") == -1:
-                            print("warning: omitiendo datos de relleno de apify")
+                            print(f"[{run_id}] Advertencia: omitiendo items de relleno de Apify (id=-1)")
                             continue
                         item["apifyRunId"] = run_id
                         item["administracionZonal"] = query_context.get("administracionZonal")
@@ -180,6 +171,8 @@ async def handle_apify_webhook(data: ApifyWebhook):
                             unique_items.append(item)
                     normalized_items = unique_items
 
+                    print(f"[{run_id}] Tras eliminar duplicados internos: {len(normalized_items)} tweets únicos")
+
                     incoming_ids = [item.get("id") for item in normalized_items]
                     existing_ids = {
                         doc["id"] for doc in test_collection.find(
@@ -190,25 +183,29 @@ async def handle_apify_webhook(data: ApifyWebhook):
 
                     new_items = [item for item in normalized_items if item.get("id") not in existing_ids]
 
+                    print(f"[{run_id}] Ya existían en MongoDB: {len(existing_ids)} | Nuevos a insertar: {len(new_items)}")
+
                     if new_items:
                         result = test_collection.insert_many(new_items)
-                        print(f"success: inserted {len(result.inserted_ids)} items, skipped {len(existing_ids)} duplicates")
+                        print(f"[{run_id}] Insertados en colección raw: {len(result.inserted_ids)} tweets")
 
                         cleaned_items = clean_data(new_items)
+                        print(f"[{run_id}] Tras limpieza y filtrado: {len(cleaned_items)} tweets | Descartados: {len(new_items) - len(cleaned_items)}")
+
                         if cleaned_items:
                             test_collection_clean.insert_many(cleaned_items)
-                            print(f"success: inserted {len(cleaned_items)} cleaned items into test_collection_clean")
+                            print(f"[{run_id}] Insertados en colección clean: {len(cleaned_items)} tweets")
                         else:
-                            print("warning: no items survived cleaning")
+                            print(f"[{run_id}] Advertencia: ningún tweet sobrevivió la limpieza, colección clean sin cambios")
                     else:
-                        print("warning: all incoming tweets were duplicates, nothing inserted")
+                        print(f"[{run_id}] Advertencia: todos los tweets recibidos ya existían en MongoDB, nada insertado")
 
                 else:
-                    print("warning: apify dataset was empty, nothing to upload")
+                    print(f"[{run_id}] Advertencia: el dataset de Apify llegó vacío, nada que procesar")
 
             except PyMongoError as e:
-                print(f"ERROR mongodb: {e}")
+                print(f"[{run_id}] Error de MongoDB: {e}")
             except Exception as e:
-                print(f"ERROR unexpected: {e}")
+                print(f"[{run_id}] Error inesperado: {e}")
 
     return {"status": "webhook processed"}
