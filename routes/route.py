@@ -106,18 +106,18 @@ async def trigger_apify_scraper(req: ScraperRequest):
 async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
-        return {"error": "apify token missing"}
+        return {"Error": "Token de Apify faltante"}
 
     run_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={apify_token}"
     try:
         r = requests.get(run_url, timeout=10)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"error contacting apify: {e}")
+        raise HTTPException(status_code=500, detail=f"Error de Apify: {e}")
 
     if not r.ok:
-        raise HTTPException(status_code=r.status_code, detail=f"apify returned {r.status_code}")
+        raise HTTPException(status_code=r.status_code, detail=f"Apify retorna {r.status_code}")
 
-    run_data = r.json().get("data", {}) 
+    run_data = r.json().get("data", {})
     status = run_data.get("status")
     dataset_id = run_data.get("defaultDatasetId")
 
@@ -133,7 +133,15 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
         except Exception:
             items_count = 0
 
-    return {"status": status, "datasetId": dataset_id, "itemsCount": items_count}
+    run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
+    clean_inserted = run_record.get("cleanInserted")
+
+    return {
+        "status": status,
+        "datasetId": dataset_id,
+        "itemsCount": items_count,
+        "cleanInserted": clean_inserted,
+    }
 
 @router.post("/webhooks/apify")
 async def handle_apify_webhook(data: ApifyWebhook):
@@ -154,7 +162,7 @@ async def handle_apify_webhook(data: ApifyWebhook):
                     normalized_items = []
                     for item in dataset_items:
                         if item.get("id") == -1:
-                            print(f"[{run_id}] Advertencia: omitiendo items de relleno de Apify (id=-1)")
+                            print(f"[{run_id}] Advertencia: omitiendo item de relleno de Apify (id=-1)")
                             continue
                         item["apifyRunId"] = run_id
                         item["administracionZonal"] = query_context.get("administracionZonal")
@@ -180,7 +188,6 @@ async def handle_apify_webhook(data: ApifyWebhook):
                             {"id": 1, "_id": 0}
                         )
                     }
-
                     new_items = [item for item in normalized_items if item.get("id") not in existing_ids]
 
                     print(f"[{run_id}] Ya existían en MongoDB: {len(existing_ids)} | Nuevos a insertar: {len(new_items)}")
@@ -192,16 +199,33 @@ async def handle_apify_webhook(data: ApifyWebhook):
                         cleaned_items = clean_data(new_items)
                         print(f"[{run_id}] Tras limpieza y filtrado: {len(cleaned_items)} tweets | Descartados: {len(new_items) - len(cleaned_items)}")
 
+                        clean_inserted = 0
                         if cleaned_items:
                             test_collection_clean.insert_many(cleaned_items)
-                            print(f"[{run_id}] Insertados en colección clean: {len(cleaned_items)} tweets")
+                            clean_inserted = len(cleaned_items)
+                            print(f"[{run_id}] Insertados en colección clean: {clean_inserted} tweets")
                         else:
                             print(f"[{run_id}] Advertencia: ningún tweet sobrevivió la limpieza, colección clean sin cambios")
+
+                        scrape_run_collection.update_one(
+                            {"run_id": run_id},
+                            {"$set": {
+                                "rawInserted": len(result.inserted_ids),
+                                "cleanInserted": clean_inserted,
+                            }}
+                        )
                     else:
                         print(f"[{run_id}] Advertencia: todos los tweets recibidos ya existían en MongoDB, nada insertado")
-
+                        scrape_run_collection.update_one(
+                            {"run_id": run_id},
+                            {"$set": {"rawInserted": 0, "cleanInserted": 0}}
+                        )
                 else:
                     print(f"[{run_id}] Advertencia: el dataset de Apify llegó vacío, nada que procesar")
+                    scrape_run_collection.update_one(
+                        {"run_id": run_id},
+                        {"$set": {"rawInserted": 0, "cleanInserted": 0}}
+                    )
 
             except PyMongoError as e:
                 print(f"[{run_id}] Error de MongoDB: {e}")
