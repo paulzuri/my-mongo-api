@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
 DEFAULT_MAX_ITEMS_PER_RUN = 100
 MAX_ITEMS_HARD_LIMIT = 1000
@@ -44,3 +44,6 @@ class ScraperRequest(BaseModel):
         if v > MAX_ITEMS_HARD_LIMIT:
             raise ValueError(f"Número máximo de tweets  no puede superar {MAX_ITEMS_HARD_LIMIT}")
         return v
+    
+class BulkRunRequest(BaseModel):
+    run_ids: List[str]

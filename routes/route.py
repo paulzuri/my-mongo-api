@@ -258,3 +258,57 @@ def handle_apify_webhook(data: ApifyWebhook):
                 print(f"[{run_id}] Error inesperado: {e}")
 
     return {"status": "webhook processed"}
+
+@router.post("/runs/bulk")
+def get_bulk_run_status(req: BulkRunRequest):
+    apify_token = os.getenv("APIFY_TOKEN")
+    if not apify_token:
+        raise HTTPException(status_code=500, detail="Token de Apify faltante")
+
+    existing_records = list(scrape_run_collection.find({"run_id": {"$in": req.run_ids}}))
+    db_map = {r["run_id"]: r for r in existing_records}
+
+    results = {}
+    session = requests.Session() 
+
+    for run_id in req.run_ids:
+        record = db_map.get(run_id, {})
+        clean_inserted = record.get("cleanInserted")
+
+        if clean_inserted is not None:
+            results[run_id] = {
+                "status": "SUCCEEDED",
+                "cleanInserted": clean_inserted,
+            }
+            continue
+
+        run_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={apify_token}"
+        try:
+            r = session.get(run_url, timeout=10)
+            if r.ok:
+                run_data = r.json().get("data", {})
+                status = run_data.get("status")
+                dataset_id = run_data.get("defaultDatasetId")
+
+                if status == "SUCCEEDED" and dataset_id:
+                    print(f"[{run_id}] bulk fallback: webhook lost or delayed. processing dataset manually.")
+                    fake_webhook = ApifyWebhook(
+                        eventType="ACTOR.RUN.SUCCEEDED",
+                        resource={"id": run_id, "defaultDatasetId": dataset_id}
+                    )
+                    handle_apify_webhook(fake_webhook)
+                    
+                    updated_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
+                    results[run_id] = {
+                        "status": "SUCCEEDED",
+                        "cleanInserted": updated_record.get("cleanInserted", 0)
+                    }
+                else:
+                    results[run_id] = {"status": status, "cleanInserted": None}
+            else:
+                results[run_id] = {"status": "ERROR", "cleanInserted": None}
+        except Exception as e:
+            print(f"[{run_id}] apify check error: {e}")
+            results[run_id] = {"status": "ERROR", "cleanInserted": None}
+
+    return results
