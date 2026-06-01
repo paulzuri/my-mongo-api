@@ -139,12 +139,26 @@ def get_run_status(run_id: str):
     run_data = r.json().get("data", {})
     status = run_data.get("status")
     dataset_id = run_data.get("defaultDatasetId")
-    run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
-    clean_inserted = run_record.get("cleanInserted")
+
+    if status == "SUCCEEDED" and dataset_id:
+            print(f"[{run_id}] Webhook perdido. procesando datos manualmente...")
+
+            fake_webhook_data = ApifyWebhook(
+                eventType="ACTOR.RUN.SUCCEEDED",
+                resource={"id": run_id, "defaultDatasetId": dataset_id}
+            )
+
+            handle_apify_webhook(fake_webhook_data)
+
+            updated_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
+            return {
+                "status": "SUCCEEDED",
+                "cleanInserted": updated_record.get("cleanInserted", 0)
+            }
 
     return {
         "status": status,
-        "cleanInserted": clean_inserted,
+        "cleanInserted": None,
     }
 
 @router.post("/webhooks/apify")
