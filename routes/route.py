@@ -1,4 +1,4 @@
-from fastapi import Query, APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException
 from models.models import *
 from config.database import *
 from datetime import datetime
@@ -8,10 +8,17 @@ from pymongo.errors import PyMongoError
 import re
 import emoji
 import requests
+import unicodedata
 
 router = APIRouter()
 
 DATE_FORMAT = "%a %b %d %H:%M:%S +0000 %Y"
+
+def strip_accents(text: str) -> str:
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', text)
+        if unicodedata.category(c) != 'Mn'
+    )
 
 BLACKLIST = {
     "aucas", "paz en su tumba", "musulmanes", "clausuras", "cuenca",
@@ -24,8 +31,10 @@ BLACKLIST = {
     "jesus", "yasuni", "nobel", "travesti", "dios"
 }
 
+BLACKLIST_NORMALIZED = {strip_accents(w) for w in BLACKLIST}
+
 BLACKLIST_PATTERN = re.compile(
-    '|'.join([rf'\b{re.escape(word)}\b' for word in BLACKLIST]),
+    '|'.join([rf'\b{re.escape(w)}\b' for w in BLACKLIST_NORMALIZED]),
     re.IGNORECASE
 )
 
@@ -36,6 +45,7 @@ def build_query_context(req: ScraperRequest) -> dict:
         "origenDatos": req.origenDatos,
         "tipoQuery": req.tipoQuery,
         "tipoZona": req.tipoZona,
+        "maxItems": req.maxItems
     }
 
 def clean_tweet_text(text: str) -> str:
@@ -54,7 +64,7 @@ def clean_data(items: list) -> list:
     for item in items:
         cleaned_text = clean_tweet_text(item.get("text", ""))
 
-        if BLACKLIST_PATTERN.search(cleaned_text):
+        if BLACKLIST_PATTERN.search(strip_accents(cleaned_text)):
             continue
 
         cleaned.append({
@@ -103,7 +113,7 @@ async def trigger_apify_scraper(req: ScraperRequest):
 
 
 @router.get("/runs/{run_id}")
-async def get_run_status(run_id: str, maxItems: int = Query(1000)):
+async def get_run_status(run_id: str):
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
         return {"Error": "Token de Apify faltante"}
@@ -120,26 +130,11 @@ async def get_run_status(run_id: str, maxItems: int = Query(1000)):
     run_data = r.json().get("data", {})
     status = run_data.get("status")
     dataset_id = run_data.get("defaultDatasetId")
-
-    items_count = 0
-    if dataset_id:
-        ds_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?limit={maxItems}&token={apify_token}"
-        try:
-            dsr = requests.get(ds_url, timeout=10)
-            if dsr.ok:
-                items = dsr.json()
-                if isinstance(items, list):
-                    items_count = len(items)
-        except Exception:
-            items_count = 0
-
     run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
     clean_inserted = run_record.get("cleanInserted")
 
     return {
         "status": status,
-        "datasetId": dataset_id,
-        "itemsCount": items_count,
         "cleanInserted": clean_inserted,
     }
 
@@ -152,9 +147,13 @@ async def handle_apify_webhook(data: ApifyWebhook):
         if dataset_id:
             try:
                 client = ApifyClient(os.getenv("APIFY_TOKEN"))
-                dataset_items = client.dataset(dataset_id).list_items().items
+            
                 run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
                 query_context = run_record.get("query_context", {})
+
+                max_items = query_context.get("maxItems", MAX_ITEMS_HARD_LIMIT)
+
+                dataset_items = client.dataset(dataset_id).list_items(limit=max_items).items
 
                 if dataset_items:
                     print(f"[{run_id}] Dataset recibido: {len(dataset_items)} tweets en total")
