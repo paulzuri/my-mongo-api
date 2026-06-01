@@ -80,7 +80,7 @@ def clean_data(items: list) -> list:
     return cleaned
 
 @router.post("/trigger-scraper")
-async def trigger_apify_scraper(req: ScraperRequest):
+def trigger_apify_scraper(req: ScraperRequest):
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
         return {"error": "No existe el token de Apify"}
@@ -113,7 +113,7 @@ async def trigger_apify_scraper(req: ScraperRequest):
 
 
 @router.get("/runs/{run_id}")
-async def get_run_status(run_id: str):
+def get_run_status(run_id: str):
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
         return {"Error": "Token de Apify faltante"}
@@ -139,7 +139,7 @@ async def get_run_status(run_id: str):
     }
 
 @router.post("/webhooks/apify")
-async def handle_apify_webhook(data: ApifyWebhook):
+def handle_apify_webhook(data: ApifyWebhook):
     if data.eventType == "ACTOR.RUN.SUCCEEDED" and data.resource:
         dataset_id = data.resource.get("defaultDatasetId")
         run_id = data.resource.get("id")
