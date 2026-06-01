@@ -114,6 +114,15 @@ def trigger_apify_scraper(req: ScraperRequest):
 
 @router.get("/runs/{run_id}")
 def get_run_status(run_id: str):
+    run_record = scrape_run_collection.find_one({"run_id": run_id}) or {}
+    clean_inserted = run_record.get("cleanInserted")
+
+    if clean_inserted is not None:
+        return {
+            "status": "SUCCEEDED",
+            "cleanInserted": clean_inserted,
+        }
+
     apify_token = os.getenv("APIFY_TOKEN")
     if not apify_token:
         return {"Error": "Token de Apify faltante"}
